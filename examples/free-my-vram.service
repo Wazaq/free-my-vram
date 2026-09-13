@@ -1,0 +1,15 @@
+[Unit]
+Description=Free My VRAM - ComfyUI idle unload watchdog
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=YOUR_USER
+WorkingDirectory=/path/to/free-my-vram
+ExecStart=/usr/bin/python3 /path/to/free-my-vram/free_my_vram.py --idle-minutes 10 --check-seconds 60
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
