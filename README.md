@@ -71,8 +71,25 @@ Run `python free_my_vram.py --help` for all options.
 If ComfyUI is busy:
 
 ```text
-[12:14:01] ComfyUI busy (1 running, 2 pending) — leaving it alone.
+[12:14:01] ComfyUI busy (1 running, 2 pending) - leaving it alone.
 ```
+
+## Live validation
+
+The standalone script was exercised on 2026-09-13 against:
+
+- ComfyUI 0.34.2
+- Python 3.12.3
+- Ubuntu 24.04
+- NVIDIA GeForce RTX 5090 (32 GB)
+
+A small Krea 2 render left ComfyUI holding **29,820 MiB** of VRAM. Running `--free-now` with an empty queue reduced ComfyUI to **828 MiB** (its bare CUDA context) within five seconds.
+
+A second live render verified the safety check: while ComfyUI reported one running job, `--free-now` refused to unload and printed the busy message instead.
+
+Also verified on that system: dry-run timing, continuous watch mode, no repeated `/free` calls for the same completed job, and clean handling of an unreachable ComfyUI URL.
+
+This is one validated environment, not a claim that every ComfyUI version, OS, or GPU has been tested. Windows runtime testing and broader ComfyUI-version feedback are welcome.
 
 ## Linux: run as a systemd service
 
@@ -112,6 +129,9 @@ Free My VRAM is intentionally conservative:
 - network/API failures do not kill ComfyUI; they are logged and retried on the next check
 - `--free-now` still respects the queue state
 - `--dry-run` never sends the unload request
+- after a fresh ComfyUI restart with no usable history, automatic mode skips safely until at least one job has produced history
+
+There is a tiny unavoidable race between reading `/queue` and sending `/free`: a new prompt could arrive in that gap. ComfyUI processes free-memory flags between jobs, so this does not interrupt the active render; the newly completed job may simply be unloaded immediately afterward.
 
 This tool does **not** stop ComfyUI, kill GPU processes, call `nvidia-smi`, modify workflows, or touch CUDA directly.
 
@@ -123,8 +143,8 @@ Free My VRAM exists to make that handoff automatic.
 
 ## Status
 
-Early public release. The core behavior has been used in a real local ComfyUI setup, but this standalone version is intentionally small and should be treated as a new project. Bug reports and real-world hardware/OS feedback are welcome.
+Early public release. The standalone core behavior has now been directly validated on one real ComfyUI 0.34.2 / Linux / RTX 5090 setup. It is intentionally small. Bug reports and real-world hardware/OS feedback are welcome.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT - see [LICENSE](LICENSE).
