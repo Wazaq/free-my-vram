@@ -46,7 +46,13 @@ class ComfyClient:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
 
-    def _request(self, path: str, *, method: str = "GET", data: dict[str, Any] | None = None) -> Any:
+    def _request(
+        self,
+        path: str,
+        *,
+        method: str = "GET",
+        data: dict[str, Any] | None = None,
+    ) -> Any:
         body = None
         headers: dict[str, str] = {}
         if data is not None:
@@ -104,11 +110,13 @@ def _timestamp_seconds(value: Any) -> float | None:
 
 
 def most_recent_history_timestamp(history: dict[str, Any]) -> float | None:
-    """Return the newest timestamp found in the most recent history response.
+    """Return the newest status timestamp in the newest history entry.
 
-    ComfyUI versions/custom builds can vary in their final status message name, so
-    this intentionally accepts any timestamp carried by status messages and takes
-    the newest one rather than depending on one exact event string.
+    ComfyUI versions/custom builds can vary in their terminal status event names.
+    For example, ComfyUI 0.34.2 uses execution_success, execution_error, or
+    execution_interrupted rather than execution_end. Taking the newest timestamp
+    from the status messages keeps the idle clock tied to the terminal event
+    without hard-coding one version-specific event name.
     """
     newest: float | None = None
 
@@ -154,7 +162,7 @@ def check_once(
     if queue.busy:
         log(
             f"ComfyUI busy ({queue.running} running, {queue.pending} pending) "
-            "— leaving it alone."
+            "- leaving it alone."
         )
         return last_freed_job_timestamp
 
@@ -169,19 +177,19 @@ def check_once(
 
     if not free_now:
         if job_timestamp is None:
-            log("Queue is empty, but no usable completion timestamp was found — skipping safely.")
+            log("Queue is empty, but no usable completion timestamp was found - skipping safely.")
             return last_freed_job_timestamp
 
         idle_for = max(0.0, now - job_timestamp)
         if idle_for < idle_seconds:
             log(
                 f"ComfyUI idle for {int(idle_for)}s "
-                f"(threshold {int(idle_seconds)}s) — not unloading yet."
+                f"(threshold {int(idle_seconds)}s) - not unloading yet."
             )
             return last_freed_job_timestamp
 
         if last_freed_job_timestamp == job_timestamp:
-            log("No new ComfyUI job since the last unload — nothing to do.")
+            log("No new ComfyUI job since the last unload - nothing to do.")
             return last_freed_job_timestamp
 
         log(
